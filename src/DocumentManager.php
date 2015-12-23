@@ -55,7 +55,11 @@ class DocumentManager
             throw new RuntimeException('The insertion is not acknowledged');
         }
 
+        var_dump($result->getInsertedId());
+
         $model->_id = $result->getInsertedId();
+
+        $collection->find();
 
         return $model;
     }

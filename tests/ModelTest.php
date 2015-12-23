@@ -37,7 +37,7 @@ class ModelTest extends \PHPUnit_Framework_TestCase
     public function testInsertDateTime()
     {
         $co2 = new CO2(Carbon::now());
-        $doc = new ModelA(['datetime' => $co2]);
+        $doc = new ModelA(['datetime' => $co2, '_id' => ['name' => 'foo', 'hash' => sha1(time())]]);
 
         $this->dm->persist($doc);
 
@@ -45,5 +45,7 @@ class ModelTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($co2->getCarbon()->getTimestamp(), $rec->datetime->getCarbon()->getTimestamp());
         $this->assertSame($co2->getCarbon()->getTimezone()->getName(),
             $rec->datetime->getCarbon()->getTimezone()->getName());
+
+        var_dump($rec);
     }
 }
