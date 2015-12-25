@@ -6,6 +6,7 @@ use MongoDB\Driver\Exception\LogicException;
 
 class Filter
 {
+
     const SHAPE_BOX = '$box';
     const SHAPE_POLYGON = '$polygon';
     const SHAPE_CENTER = '$center';
@@ -17,7 +18,20 @@ class Filter
     const CRS_NAME = 'urn:x-mongodb:crs:strictwinding:EPSG:4326';
 
     protected $expressions;
+
     protected $currentField;
+
+    protected $isRootDoc;
+
+    public function __construct($isRoot = true)
+    {
+        $this->isRootDoc = !!$isRoot;
+    }
+
+    public function newFilter()
+    {
+        return new Filter(false);
+    }
 
     public function field($field)
     {
@@ -235,6 +249,11 @@ class Filter
 
     protected function operator($op, $val)
     {
+        if ($this->isRootDoc && !$this->expressions) {
+            throw new LogicException(
+                'In the root document, a field must be selected via [field] before apply and operator'
+            );
+        }
         if (!$this->currentField) {
             $this->expressions[$op] = $val;
         } else {
