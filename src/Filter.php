@@ -303,6 +303,17 @@ class Filter
         return $this->operator('$mod', [$division, $remainder]);
     }
 
+    /**
+     * Provides regular expression capabilities for pattern matching strings in queries. MongoDB uses Perl compatible
+     * regular expressions (i.e. “PCRE” ) version 8.36 with UTF-8 support.
+     *
+     * @param string $pattern
+     * @param string $option
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/regex/
+     */
     public function regex($pattern, $option = '')
     {
         $this->operator('$regex', $pattern);
@@ -313,6 +324,18 @@ class Filter
         return $this;
     }
 
+    /**
+     * $text performs a text search on the content of the fields indexed with a text index.
+     *
+     * @param      $search
+     * @param null $language
+     * @param bool $caseSensitive
+     * @param bool $diacriticSensitive
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/text/
+     */
     public function text($search, $language = null, $caseSensitive = false, $diacriticSensitive = false)
     {
         $this->expressions['$text'] = ['$search' => $search];
@@ -329,6 +352,17 @@ class Filter
         return $this;
     }
 
+    /**
+     * Use the $where operator to pass either a string containing a JavaScript expression or a full JavaScript function
+     * to the query system. The $where provides greater flexibility, but requires that the database processes the
+     * JavaScript expression or function for each document in the collection.
+     *
+     * @param $javascript
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/where/
+     */
     public function where($javascript)
     {
         $this->expressions['$where'] = $javascript;
@@ -336,41 +370,118 @@ class Filter
         return $this;
     }
 
+    /**
+     * The $all operator selects the documents where the value of a field is an array that contains all the specified
+     * elements.
+     *
+     * @param array $values
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/all/
+     */
     public function all(array $values)
     {
         return $this->operator('$all', $values);
     }
 
+    /**
+     * The $elemMatch operator matches documents that contain an array field with at least one element that matches all
+     * the specified query criteria.
+     *
+     * @param Filter $filter
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/elemMatch/
+     */
     public function elemMatch(Filter $filter)
     {
         return $this->operator('$elemMatch', $filter);
     }
 
+    /**
+     * The $size operator matches any array with the number of elements specified by the argument.
+     *
+     * @param $value
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/size/
+     */
     public function size($value)
     {
         return $this->operator('$size', $value);
     }
 
+    /**
+     * $bitsAllSet matches documents where all of the bit positions given by the query are set (i.e. 1) in field.
+     *
+     * @param $bits
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAllSet/
+     */
     public function bitAllSet($bits)
     {
         return $this->operator('$bitAllSet', $bits);
     }
 
+    /**
+     * $bitsAnySet matches documents where any of the bit positions given by the query are set (i.e. 1) in field.
+     *
+     * @param $bits
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAnySet/
+     */
     public function bitAnySet($bits)
     {
         return $this->operator('$bitAnySet', $bits);
     }
 
+    /**
+     * $bitsAllClear matches documents where all of the bit positions given by the query are clear (i.e. 0) in field.
+     *
+     * @param $bits
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAllClear/
+     */
     public function bitAllClear($bits)
     {
         return $this->operator('$bitAllClear', $bits);
     }
 
+    /**
+     * $bitsAnyClear matches documents where any of the bit positions given by the query are clear (i.e. 0) in field.
+     *
+     * @param $bits
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAnyClear/
+     */
     public function bitAnyClear($bits)
     {
         return $this->operator('$bitAnyClear', $bits);
     }
 
+    /**
+     * The $comment query operator associates a comment to any expression taking a query predicate.
+     *
+     * Because comments propagate to the profile log, adding a comment can make your profile data easier to interpret
+     * and trace.
+     *
+     * @param $comment
+     *
+     * @return $this
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/comment/
+     */
     public function comment($comment)
     {
         $this->expressions['$comment'] = $comment;
@@ -378,6 +489,20 @@ class Filter
         return $this;
     }
 
+    /**
+     * Selects documents with geospatial data that exists entirely within a specified shape. When determining
+     * inclusion, MongoDB considers the border of a shape to be part of the shape, subject to the precision of floating
+     * point numbers.
+     *
+     * @param       $type
+     * @param array $coordinates
+     * @param bool  $crs specify a GeoJSON polygons or multipolygons using the default coordinate reference system
+     *                   (CRS),
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/geoWithin
+     */
     public function geoWithin($type, array $coordinates, $crs = false)
     {
         $value = $this->createGeometry($type, $coordinates, $crs);
@@ -385,11 +510,36 @@ class Filter
         return $this->operator('$geoWithin', $value);
     }
 
+    /**
+     * Selects documents with geospatial data that exists entirely within a specified shape that defined by legacy
+     * coordinate pairs on a plane. When determining inclusion, MongoDB considers the border of a shape to be part of
+     * the shape, subject to the precision of floating point numbers.
+     *
+     * @param $shape
+     * @param $coordinates
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/geoWithin
+     */
     public function geoWithinLegacy($shape, $coordinates)
     {
         return $this->operator('$geoWithin', [$shape => $coordinates]);
     }
 
+    /**
+     * Selects documents whose geospatial data intersects with a specified GeoJSON object; i.e. where the intersection
+     * of the data and the specified object is non-empty. This includes cases where the data and the specified object
+     * share an edge.
+     *
+     * @param       $type
+     * @param array $coordinates
+     * @param bool  $crs specify a single-ringed GeoJSON polygon with a custom MongoDB CRS
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/geoIntersects/
+     */
     public function geoIntersects($type, array $coordinates, $crs = false)
     {
         $value = $this->createGeometry($type, $coordinates, $crs);
@@ -397,6 +547,18 @@ class Filter
         return $this->operator('$geoIntersects', $value);
     }
 
+    /**
+     * Specifies a point for which a geospatial query returns the documents from nearest to farthest.
+     *
+     * @param $long
+     * @param $lat
+     * @param $max
+     * @param $min
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/near/
+     */
     public function near($long, $lat, $max, $min)
     {
         $value = $this->createNearStmtValue($long, $lat, $max, $min);
@@ -404,6 +566,18 @@ class Filter
         return $this->operator('$near', $value);
     }
 
+    /**
+     * Specifies a point (using legacy coordinates) for which a geospatial query returns the documents from nearest to
+     * farthest.
+     *
+     * @param $x
+     * @param $y
+     * @param $max
+     *
+     * @return $this
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/near/
+     */
     public function nearLegacy($x, $y, $max)
     {
         $this->operator('$near', [$x, $y]);
@@ -412,6 +586,19 @@ class Filter
         return $this;
     }
 
+    /**
+     * Specifies a point for which a geospatial query returns the documents from nearest to farthest. MongoDB
+     * calculates distances for $nearSphere using spherical geometry.
+     *
+     * @param $long
+     * @param $lat
+     * @param $max
+     * @param $min
+     *
+     * @return Filter
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/nearSphere/
+     */
     public function nearSphere($long, $lat, $max, $min)
     {
         $value = $this->createNearStmtValue($long, $lat, $max, $min);
@@ -419,6 +606,18 @@ class Filter
         return $this->operator('$nearSphere', $value);
     }
 
+    /**
+     * Specifies a point (using legacy coordinate) for which a geospatial query returns the documents from nearest to
+     * farthest. MongoDB calculates distances for $nearSphere using spherical geometry.
+     *
+     * @param $x
+     * @param $y
+     * @param $max
+     *
+     * @return $this
+     *
+     * @see https://docs.mongodb.org/manual/reference/operator/query/nearSphere/
+     */
     public function nearSphereLegacy($x, $y, $max)
     {
         $this->operator('$nearSphere', [$x, $y]);
@@ -428,6 +627,9 @@ class Filter
         return $this;
     }
 
+    /**
+     * Throw exception if no current field is selected
+     */
     protected function checkFieldSelected()
     {
         if (!$this->currentField) {
@@ -435,12 +637,18 @@ class Filter
         }
     }
 
+    /**
+     * Add new operator
+     *
+     * @param $op
+     * @param $val
+     *
+     * @return $this
+     */
     protected function operator($op, $val)
     {
-        if ($this->isRootDoc && !$this->expressions) {
-            throw new LogicException(
-                'In the root document, a field must be selected via [field] before apply and operator'
-            );
+        if ($this->isRootDoc) {
+            $this->checkFieldSelected();
         }
         if (!$this->currentField) {
             $this->expressions[$op] = $val;
@@ -455,6 +663,14 @@ class Filter
         return $this;
     }
 
+    /**
+     * Add new `and`, `or` or `xor` sub query
+     *
+     * @param        $operator
+     * @param Filter $condition
+     *
+     * @return $this
+     */
     protected function addLogicExpr($operator, Filter $condition)
     {
         if (!isset($this->expressions[$operator])) {
