@@ -2,6 +2,7 @@
 
 namespace HieuLe\MongoODM;
 
+use HieuLe\MongoODM\Contract\Arrayable;
 use MongoDB\Driver\Exception\LogicException;
 
 /**
@@ -11,7 +12,7 @@ use MongoDB\Driver\Exception\LogicException;
  *
  * @package HieuLe\MongoODM
  */
-class Filter
+class Filter implements Arrayable
 {
 
     const SHAPE_BOX = '$box';
@@ -48,6 +49,15 @@ class Filter
     public function newFilter()
     {
         return new Filter(false);
+    }
+
+    /**
+     * Whether this document is root or embedded doc
+     * @return bool
+     */
+    public function isRoot()
+    {
+        return $this->isRootDoc;
     }
 
     /**
@@ -193,7 +203,7 @@ class Filter
      */
     public function not(Filter $filter)
     {
-        return $this->operator('$not', $filter);
+        return $this->operator('$not', $filter->toArray());
     }
 
     /**
@@ -343,10 +353,10 @@ class Filter
             $this->expressions['$text']['$language'] = $language;
         }
         if ($caseSensitive) {
-            $this->expressions['$caseSensitive'] = true;
+            $this->expressions['$text']['$caseSensitive'] = true;
         }
         if ($diacriticSensitive) {
-            $this->expressions['$diacriticSensitive'] = true;
+            $this->expressions['$text']['$diacriticSensitive'] = true;
         }
 
         return $this;
@@ -397,7 +407,7 @@ class Filter
      */
     public function elemMatch(Filter $filter)
     {
-        return $this->operator('$elemMatch', $filter);
+        return $this->operator('$elemMatch', $filter->toArray());
     }
 
     /**
@@ -423,9 +433,9 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAllSet/
      */
-    public function bitAllSet($bits)
+    public function bitsAllSet($bits)
     {
-        return $this->operator('$bitAllSet', $bits);
+        return $this->operator('$bitsAllSet', $bits);
     }
 
     /**
@@ -437,9 +447,9 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAnySet/
      */
-    public function bitAnySet($bits)
+    public function bitsAnySet($bits)
     {
-        return $this->operator('$bitAnySet', $bits);
+        return $this->operator('$bitsAnySet', $bits);
     }
 
     /**
@@ -451,9 +461,9 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAllClear/
      */
-    public function bitAllClear($bits)
+    public function bitsAllClear($bits)
     {
-        return $this->operator('$bitAllClear', $bits);
+        return $this->operator('$bitsAllClear', $bits);
     }
 
     /**
@@ -465,9 +475,9 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/bitsAnyClear/
      */
-    public function bitAnyClear($bits)
+    public function bitsAnyClear($bits)
     {
-        return $this->operator('$bitAnyClear', $bits);
+        return $this->operator('$bitsAnyClear', $bits);
     }
 
     /**
@@ -559,7 +569,7 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/near/
      */
-    public function near($long, $lat, $max, $min)
+    public function near($long, $lat, $max = -1, $min = -1)
     {
         $value = $this->createNearStmtValue($long, $lat, $max, $min);
 
@@ -578,10 +588,12 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/near/
      */
-    public function nearLegacy($x, $y, $max)
+    public function nearLegacy($x, $y, $max = -1)
     {
         $this->operator('$near', [$x, $y]);
-        $this->operator('$maxDistance', $max);
+        if ($max >= 0) {
+            $this->operator('$maxDistance', $max);
+        }
 
         return $this;
     }
@@ -599,7 +611,7 @@ class Filter
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/nearSphere/
      */
-    public function nearSphere($long, $lat, $max, $min)
+    public function nearSphere($long, $lat, $max = -1, $min = -1)
     {
         $value = $this->createNearStmtValue($long, $lat, $max, $min);
 
@@ -613,18 +625,28 @@ class Filter
      * @param $x
      * @param $y
      * @param $max
+     * @param $min
      *
      * @return $this
      *
      * @see https://docs.mongodb.org/manual/reference/operator/query/nearSphere/
      */
-    public function nearSphereLegacy($x, $y, $max)
+    public function nearSphereLegacy($x, $y, $max = -1, $min = -1)
     {
         $this->operator('$nearSphere', [$x, $y]);
-        $this->operator('$minDistance', $max);
-        $this->operator('$maxDistance', $max);
+        if ($min >= 0) {
+            $this->operator('$minDistance', $min);
+        }
+        if ($max >= 0) {
+            $this->operator('$maxDistance', $max);
+        }
 
         return $this;
+    }
+
+    public function toArray()
+    {
+        return $this->expressions;
     }
 
     /**
@@ -677,7 +699,7 @@ class Filter
             $this->expressions[$operator] = [];
         }
 
-        $this->expressions[$operator][] = $condition;
+        $this->expressions[$operator][] = $condition->toArray();
 
         return $this;
     }
@@ -703,16 +725,22 @@ class Filter
         return $value;
     }
 
-    protected function createNearStmtValue($long, $lat, $max, $min)
+    protected function createNearStmtValue($long, $lat, $max = -1, $min = -1)
     {
         $value = [
-            '$geometry'    => [
+            '$geometry' => [
                 'type'        => 'Point',
                 'coordinates' => [$long, $lat],
             ],
-            '$maxDistance' => $max,
-            '$minDistance' => $min,
         ];
+
+        if ($max >= 0) {
+            $value['$maxDistance'] = $max;
+        }
+
+        if ($min >= 0) {
+            $value['$minDistance'] = $min;
+        }
 
         return $value;
     }
